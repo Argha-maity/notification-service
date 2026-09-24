@@ -12,6 +12,7 @@ import argha.example.notification_processing_system.repository.JobRepository;
 import argha.example.notification_processing_system.repository.NotificationRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -29,6 +30,7 @@ public class JobService {
     @Autowired
     private RedisQueueService redisQueueService;
 
+    @Transactional
     public Job createNewJob(JobRequest request) {
         Long notificationId=request.getNotificationId();
         Notification notification=notificationRepository.findById(notificationId).orElse(null);
@@ -47,7 +49,12 @@ public class JobService {
                 .build();
 
         Job jobCreated=jobRepository.save(job);
-        redisQueueService.enqueue(jobCreated.getJobId());
+
+        try {//prevent from being orphaned by using @Transactional
+            redisQueueService.enqueue(jobCreated.getJobId());
+        }catch(Exception e){
+            throw new RuntimeException("Failed to enqueue job", e);
+        }
 
         return jobCreated;
     }

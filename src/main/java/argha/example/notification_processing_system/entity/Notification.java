@@ -1,6 +1,7 @@
 package argha.example.notification_processing_system.entity;
 
 import argha.example.notification_processing_system.entity.type.NotificationChannel;
+import argha.example.notification_processing_system.entity.type.NotificationStatus;
 import argha.example.notification_processing_system.entity.type.NotificationType;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
@@ -31,7 +32,9 @@ public class Notification {
     private NotificationChannel channel;
     private String subject;
     private String message;
-    private String status;
+
+    @Enumerated(EnumType.STRING)
+    private NotificationStatus status;
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)

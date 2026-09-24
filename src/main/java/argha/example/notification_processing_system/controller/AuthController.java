@@ -26,7 +26,7 @@ public class AuthController {
         return ResponseEntity.status(HttpStatus.CREATED).body("User created successfully\n"+createdUser);
     }
 
-    @PostMapping("login")
+    @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest request){
         if(request==null)
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("request cannot be null");

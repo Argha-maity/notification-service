@@ -3,6 +3,7 @@ package argha.example.notification_processing_system.service;
 import argha.example.notification_processing_system.entity.Job;
 import argha.example.notification_processing_system.entity.Notification;
 import argha.example.notification_processing_system.entity.type.JobStatus;
+import argha.example.notification_processing_system.entity.type.NotificationStatus;
 import argha.example.notification_processing_system.repository.JobRepository;
 import argha.example.notification_processing_system.repository.NotificationRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,6 +38,12 @@ public class JobProcessingService {
         if(job.getStatus()== JobStatus.COMPLETED)
             return;
 
+        if(job.getAttemptCount()>=job.getMaxAttempts()){
+            job.setStatus(JobStatus.FAILED);
+//            moveToDeadLetterQueue(job);
+            return;
+        }
+
         job.setStatus(JobStatus.PROCESSING);
         job.setAttemptCount(job.getAttemptCount()+1);
         jobRepository.save(job);
@@ -44,19 +51,22 @@ public class JobProcessingService {
         try{
             Notification notification=job.getNotification();
 
-            emailService.sendEmail(notification.getSubject(), notification.getMessage());
+            emailService.sendEmail(notification.getSubject(), notification.getMessage()); //also pass to
 
             job.setStatus(JobStatus.COMPLETED);
             job.setCompletedAt(LocalDateTime.now());
 
-            notification.setStatus("SENT");
+            notification.setStatus(NotificationStatus.SENT);
             notification.setSentAt(LocalDateTime.now());
 
             jobRepository.save(job);
             notificationRepository.save(notification);
         }catch(Exception e){
-            job.setStatus(JobStatus.FAILED);
+            job.setStatus(JobStatus.PENDING);
             job.setLast_error(e.getMessage());
+
+            long delaySeconds = (long) Math.pow(2, job.getAttemptCount());
+            job.setAvailableAt(LocalDateTime.now().plusSeconds(delaySeconds));
             jobRepository.save(job);
         }
     }

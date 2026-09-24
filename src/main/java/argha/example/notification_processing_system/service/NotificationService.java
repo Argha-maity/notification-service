@@ -7,6 +7,7 @@ import argha.example.notification_processing_system.entity.Job;
 import argha.example.notification_processing_system.entity.Notification;
 import argha.example.notification_processing_system.entity.User;
 import argha.example.notification_processing_system.entity.type.JobStatus;
+import argha.example.notification_processing_system.entity.type.NotificationStatus;
 import argha.example.notification_processing_system.repository.NotificationRepository;
 import argha.example.notification_processing_system.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,7 +37,7 @@ public class NotificationService {
                 .channel(notificationRequest.getChannel())
                 .subject(notificationRequest.getSubject())
                 .message(notificationRequest.getMessage())
-                .status("QUEUED")
+                .status(NotificationStatus.QUEUED)
                 .user(user)
                 .build();
 
@@ -59,7 +60,6 @@ public class NotificationService {
                 .status(notification.getStatus())
                 .type(notification.getType())
                 .channel(notification.getChannel())
-                .status(notification.getStatus())
                 .build();
     }
 
@@ -83,10 +83,30 @@ public class NotificationService {
         return null;
     }
 
+    public Notification findNotificationById(Long notificationId){
+        if (notificationId == null)
+            throw new IllegalArgumentException("notificationId is null");
+
+        return notificationRepository.findById(notificationId).orElse(null);
+    }
+
     public List<NotificationResponse> getAllNotifications(){
         List<Notification> notifications=notificationRepository.findAll();
 
         List<NotificationResponse> list=new ArrayList<>();
+        for(Notification notification:notifications)
+            list.add(new NotificationResponse(notification));
+
+        return list;
+    }
+
+    public List<NotificationResponse> getNotificationsByUser(User user) {
+        if(user == null)
+            throw new IllegalArgumentException("user is null");
+
+        List<Notification> notifications=notificationRepository.findAllNotificationByUser(user.getId());
+        List<NotificationResponse> list=new ArrayList<>();
+
         for(Notification notification:notifications)
             list.add(new NotificationResponse(notification));
 

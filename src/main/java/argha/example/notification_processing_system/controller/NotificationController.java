@@ -43,16 +43,19 @@ public class NotificationController {
 
     @GetMapping("/{notificationId}")
     public ResponseEntity<?> getNotification(@AuthenticationPrincipal UserPrincipal userDetails, @PathVariable Long notificationId){
-        try {
-            if (userDetails == null)
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("User not logged in");
+        User currentUser = userDetails.getUser();
+        Notification notification = notificationService.findNotificationById(notificationId);
 
-            NotificationResponse notification = notificationService.getNotificationById(notificationId);
-            return ResponseEntity.status(HttpStatus.OK).body(notification);
-        }catch (Exception e){
-            System.out.println(e.getMessage());
+        if(notification == null) {
+            return ResponseEntity.notFound().build();
         }
-        return null;
+
+        if(!notification.getUser().getId().equals(currentUser.getId())) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body("Not authorized to access this notification");
+        }
+
+        return ResponseEntity.ok(new NotificationResponse(notification));
     }
 
     @GetMapping()
@@ -60,7 +63,8 @@ public class NotificationController {
         if(userDetails == null)
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("User not logged in");
 
-        List<NotificationResponse> notifications=notificationService.getAllNotifications();
+        User currentUser = userDetails.getUser();
+        List<NotificationResponse> notifications=notificationService.getNotificationsByUser(currentUser);
         if(notifications==null || notifications.isEmpty())
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("No notifications found");
         return ResponseEntity.status(HttpStatus.OK).body(notifications);

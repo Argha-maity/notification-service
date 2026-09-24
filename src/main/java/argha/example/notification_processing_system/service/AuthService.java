@@ -9,6 +9,7 @@ import argha.example.notification_processing_system.entity.type.Role;
 import argha.example.notification_processing_system.repository.UserRepository;
 import argha.example.notification_processing_system.security.JwtAuthFilter;
 import argha.example.notification_processing_system.security.JwtUtil;
+import org.apache.coyote.BadRequestException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -34,8 +35,15 @@ public class AuthService {
                 .username(request.getUsername())
                 .email(request.getEmail())
                 .password(passwordEncoder.encode(request.getPassword()))
-                .role(Role.valueOf(request.getRole()))
+//                .role(Role.valueOf(request.getRole()))
                 .build();
+
+        try {
+            Role role= Role.valueOf(request.getRole().toUpperCase());
+            user.setRole(role);
+        } catch(IllegalArgumentException e) {
+            throw new RuntimeException("Invalid role: " + request.getRole());
+        }
 
         userRepository.save(user);
         return SignupResponse.builder()
